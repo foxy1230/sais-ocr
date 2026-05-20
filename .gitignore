@@ -1,0 +1,19 @@
+# 模型文件（通过 GitHub Secrets 下载或手动添加）
+models/*.pt
+models/*.pth
+
+# 系统
+.DS_Store
+Thumbs.db
+*.swp
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# 数据集
+data/
+*.tar
+*.zip

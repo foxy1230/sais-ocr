@@ -1,0 +1,50 @@
+name: 构建并推送 Docker 镜像
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 登录阿里云 ACR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.ACR_REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: 下载模型文件（从 OSS）
+        run: |
+          if [ -n "${{ secrets.MODEL_YOLO_URL }}" ]; then
+            echo "下载 YOLO 模型..."
+            wget -q -O models/yolo_best.pt "${{ secrets.MODEL_YOLO_URL }}"
+          fi
+          if [ -n "${{ secrets.MODEL_RECOGNITION_URL }}" ]; then
+            echo "下载识别模型..."
+            wget -q -O models/recognition_best.pth "${{ secrets.MODEL_RECOGNITION_URL }}"
+          fi
+          echo "模型文件:"
+          ls -lh models/
+
+      - name: 设置 Docker 标签
+        id: meta
+        run: |
+          echo "TAG=${{ secrets.ACR_REGISTRY }}/${{ secrets.ACR_IMAGE }}:latest" >> $GITHUB_OUTPUT
+          echo "TIMESTAMP=${{ secrets.ACR_REGISTRY }}/${{ secrets.ACR_IMAGE }}:$(date +%Y%m%d-%H%M%S)" >> $GITHUB_OUTPUT
+
+      - name: 构建并推送
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.TAG }}
+            ${{ steps.meta.outputs.TIMESTAMP }}
