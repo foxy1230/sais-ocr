@@ -21,8 +21,9 @@ jobs:
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
 
-      - name: 下载模型文件（从 OSS）
+      - name: 准备模型文件
         run: |
+          mkdir -p models
           if [ -n "${{ secrets.MODEL_YOLO_URL }}" ]; then
             echo "下载 YOLO 模型..."
             wget -q -O models/yolo_best.pt "${{ secrets.MODEL_YOLO_URL }}"
@@ -32,7 +33,7 @@ jobs:
             wget -q -O models/recognition_best.pth "${{ secrets.MODEL_RECOGNITION_URL }}"
           fi
           echo "模型文件:"
-          ls -lh models/
+          ls -lh models/ || true
 
       - name: 设置 Docker 标签
         id: meta
@@ -40,7 +41,18 @@ jobs:
           echo "TAG=${{ secrets.ACR_REGISTRY }}/${{ secrets.ACR_IMAGE }}:latest" >> $GITHUB_OUTPUT
           echo "TIMESTAMP=${{ secrets.ACR_REGISTRY }}/${{ secrets.ACR_IMAGE }}:$(date +%Y%m%d-%H%M%S)" >> $GITHUB_OUTPUT
 
+      - name: 检查模型文件
+        id: check_models
+        run: |
+          if [ -f models/yolo_best.pt ] && [ -f models/recognition_best.pth ]; then
+            echo "ready=true" >> $GITHUB_OUTPUT
+          else
+            echo "ready=false" >> $GITHUB_OUTPUT
+            echo "⚠️ 模型文件缺失，请添加后再构建"
+          fi
+
       - name: 构建并推送
+        if: steps.check_models.outputs.ready == 'true'
         uses: docker/build-push-action@v5
         with:
           context: .
