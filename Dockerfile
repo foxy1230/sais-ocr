@@ -10,17 +10,28 @@ ENV TZ=Asia/Shanghai \
 
 WORKDIR /app
 
+# 系统依赖
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-        libgl1 libglib2.0-0 libsm6 libxrender1 libxext6 libgomp1 wget \
+        libgl1 \
+        libglib2.0-0 \
+        libsm6 \
+        libxrender1 \
+        libxext6 \
+        libgomp1 \
+        wget \
         && rm -rf /var/lib/apt/lists/*
 
+# 复制依赖并安装
 COPY requirements.txt /app/requirements.txt
 RUN pip install --upgrade pip setuptools wheel && \
     pip install --prefer-binary -r /app/requirements.txt && \
     pip install onnxruntime-gpu
 
+# 复制模型文件
 COPY models/ /app/models/
+
+# 复制源代码
 COPY src/ /app/src/
 COPY run.sh /app/run.sh
 RUN chmod +x /app/run.sh
