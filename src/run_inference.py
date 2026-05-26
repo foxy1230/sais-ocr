@@ -12,6 +12,7 @@ import torch
 import torch.nn as nn
 from torchvision import transforms
 from PIL import Image
+import numpy as np
 import timm
 
 INPUT_DIR = Path(os.getenv("INPUT_DIR", "/saisdata/13/eval/images"))
